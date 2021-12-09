@@ -1,36 +1,38 @@
-#include <stdio.h>
-#include <sys/wait.h>
+/* Auteur: Lam Cao Tho TRINH
+ *
+ *
+ */
+
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
 
-#define MAXLINE  4096
+#define MAXLINE 100
+#define MAXARGS 20
+#define MAX_PATH_LENGTH 5000
 
-int main()
-{
-    char buf[MAXLINE];
-    pid_t pid;
-    int status;
 
-    while (1){//boucle infinitive
-        printf("$ ");  /* print prompt (printf requires %% to print %) */
-    if (fgets(buf, MAXLINE, stdin) != NULL) {
-        if (buf[strlen(buf) - 1] == '\n')
-            buf[strlen(buf) - 1] = 0; /* replace newline with null */
+/* Fonction prototype */
+int parseline(char *s, char **argv);
 
-        if ((pid = fork()) < 0) {
-            perror("fork error");
-        } else if (pid == 0) {      /* child */
-            execlp(buf, buf, (char *)0);
-            perror("couldn′t execute: %s", buf);
-            exit(127);
-        }
+/* ----------- MAIN PROGRAM ------------ */
 
-        /* parent */
-        if ((pid = waitpid(pid, &status, 0)) < 0)
-            perror("waitpid error");
-        printf("%% ");
-        }
-        exit(0);
+int main(void) {
+    
+    char  cmdline[MAXLINE];
+    char *argv[MAXARGS];
+    int argc;
+    int status;
+    pid_t pid;
+
+    /* Boucle while infinie pour attendre l'utilisateur rentre une commande -> executer commande*/
+    while(1){
+        /* Nom de cet mini shell */
+        printf("TM-minishell > ");
     }
-    
 }
