@@ -13,8 +13,8 @@
 #include <errno.h>
 
 #define MAXLINE 100
-#define MAXARGS 20
-#define MAX_PATH_LENGTH 5000
+#define MAXARGS 16
+#define MAX_PATH_LENGTH 1024
 
 
 /* Fonction prototype */
@@ -26,15 +26,17 @@ int main(void) {
     
     char  cmdline[MAXLINE];
     char *argv[MAXARGS];
-    int path[MAX_PATH_LENGTH];
+    char path[MAX_PATH_LENGTH];
     int argc;
     int status;
     pid_t pid;
 
+    printf("=====>>> TM-MiniShell <<<===== \n");
+
     /* Boucle while infinie pour attendre l'utilisateur rentre une commande -> executer commande*/
     while(1){
         /* Nom de cet mini shell */
-        printf("TM-minishell > \n");
+        
         printf("$ ");
 
         /* Lire entrer command line*/
@@ -46,14 +48,16 @@ int main(void) {
             continue;
         }
 
+        /* Si la commande passée est exit, alors le shell devra s'arrêter. */
         if(strcmp(argv[0], "exit") == 0){
             return EXIT_SUCCESS;
         }
 
+        /* Si la commande passée est pwd, alors le shell devra afficher le répertoire de travail courrnt */
         if(strcmp(argv[0], "pwd") == 0){
             if (getcwd(path, MAX_PATH_LENGTH)){
                 printf("%s\n", path);
-            }else {
+            } else {
                 printf("Ne pas afficher le répertoire de travail courant.\n");
             }
             continue;
@@ -75,6 +79,12 @@ int parse_line(char *s, char **argv){
 
         while ((argv[count] != NULL) && (count < MAXARGS -1)){
             argv[++count] = strtok((char *) 0, spaceEnterTab);
+        }
+
+        argv[MAXARGS-1] = NULL;
+
+        for (int i = 0; i <= count; i++){
+            printf("argv[%d] = %s\n" , i, argv[i]);
         }
 
         return count;
