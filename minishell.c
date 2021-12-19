@@ -14,19 +14,18 @@
 
 #define MAXLINE 100
 #define MAXARGS 16
-#define MAX_PATH_LENGTH 1024
-
 
 /* Fonction prototype */
 int parse_line(char *s, char **argv);
+void redirection(int count, char *argv[]);
 
 /* ----------- MAIN PROGRAM ------------ */
 
 int main(void) {
     
-    char  cmdline[MAXLINE];
+    char cmdline[MAXLINE]; //buffer pour fgets
     char *argv[MAXARGS];
-    char path[MAX_PATH_LENGTH];
+    char path[1024];
     int argc;
     int status;
     pid_t pid;
@@ -44,48 +43,80 @@ int main(void) {
 
         argc = parse_line(cmdline, argv);
 
-        if(argc == 0) {
-            continue;
-        }
-
         /* Si la commande passée est exit, alors le shell devra s'arrêter. */
         if(strcmp(argv[0], "exit") == 0){
+            printf("Byebye!\n");
             return EXIT_SUCCESS;
         }
 
-        /* Si la commande passée est pwd, alors le shell devra afficher le répertoire de travail courrnt */
-        if(strcmp(argv[0], "pwd") == 0){
-            if (getcwd(path, MAX_PATH_LENGTH)){
-                printf("%s\n", path);
-            } else {
-                printf("Ne pas afficher le répertoire de travail courant.\n");
+        if(argc == 0) {
+                continue;
+        } else {
+            pid = fork();
+            if(pid < 0) {
+                perror("Fork erreur!");
+                exit(EXIT_FAILURE);
+            } else if(pid == 0){ //child process
+                int out;
+
+                redirection(argc, argv);
+                out = execvp(argv[0],argv);
+
+                if (out < 0) {
+                    fprintf(stderr, "Exec erreur.\n");
+                    exit(0);
+                }
+            } else { //Parent, shell continue
+                if (wait(&status) == -1){
+                    perror("Parent fork erreur!!");
+                } else {
+                    wait(&pid);
+                }
             }
-            continue;
         }
 
-
-
-
+        for (int i = 0; i <= argc; i++){
+            printf("Argv[%d] = %s\n", i, argv[i]);
+        }     
     }
-
-    
 }
-
+            
 int parse_line(char *s, char **argv){
         int count = 0;
         char *spaceEnterTab = " \n\t";
 
         argv[count] = strtok(s, spaceEnterTab);
 
-        while ((argv[count] != NULL) && (count < MAXARGS -1)){
+        while ((argv[count] != NULL) && (count+1 < MAXARGS)){
             argv[++count] = strtok((char *) 0, spaceEnterTab);
         }
-
-        argv[MAXARGS-1] = NULL;
-
-        for (int i = 0; i <= count; i++){
-            printf("argv[%d] = %s\n" , i, argv[i]);
-        }
-
+        printf("Count =%d\n", count);
         return count;
     }
+
+void redirection(int argc, char *argv[]){
+    int out = 0;
+    int i;
+    int cleanid = 0;
+    char *args_clean[argc];
+
+    for(i = 0; i < argc; i++){
+        if(!strcmp(argv[i], ">")){
+            ++i;
+            int out_fd = open(argv[i], O_WRONLY | O_CREAT| O_TRUNC, 0755);
+            if(out_fd < 0){
+                perror("Redirection erreur");
+            }
+            dup2(out_fd, STDOUT_FILENO);
+            close(out_fd);
+            //argv[out] = NULL;
+            continue;
+        } 
+        args_clean[cleanid++] = argv[i];
+    }
+
+    args_clean[cleanid] = NULL;
+    execvp(args_clean[0], args_clean);
+    fprintf(stderr, "Child erreur exécution.\n");
+    exit(0);
+}
