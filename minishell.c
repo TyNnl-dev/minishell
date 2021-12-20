@@ -19,9 +19,9 @@
 
 /* Fonction prototype */
 int parse_line(char *s, char *argv[]);
-void redirection(int count, char *argv[]);
+void redirection(int argcc, char *argv[]);
 void handler(int num);
-void pipe_simple(int count, char *argv[]);
+void pipe_simple(int argc, char *argv[]);
 
 //int pipe_fd[2];
 
@@ -133,7 +133,7 @@ int parse_line(char *s, char *argv[]){
         while ((argv[count] != NULL) && (count+1 < MAXARGS)){
             argv[++count] = strtok((char *) 0, spaceEnterTab);
         }
-        printf("Count =%d\n", count);
+        //printf("Count =%d\n", count);
         return count;
     }
 
