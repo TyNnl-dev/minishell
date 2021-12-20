@@ -19,7 +19,7 @@
 
 /* Fonction prototype */
 int parse_line(char *s, char *argv[]);
-void redirection(int argcc, char *argv[]);
+void redirection(int argc, char *argv[]);
 void handler(int num);
 void pipe_simple(int argc, char *argv[]);
 
