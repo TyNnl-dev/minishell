@@ -1,6 +1,6 @@
 /* Auteur: Lam Cao Tho TRINH
- *
- *
+ * Groupe 22 - Lam Cao Tho TRINH - Quang Minh PHAM
+ * No étudiant: Lam Cao Tho TRINH - U21812378
  */
 
 #include <stdlib.h>
@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <signal.h>
+#include <stdbool.h> 
 
 #define MAXLINE 100
 #define MAXARGS 16
@@ -21,8 +22,6 @@ int parse_line(char *s, char *argv[]);
 void redirection(int count, char *argv[]);
 void handler(int num);
 void pipe_simple(int count, char *argv[]);
-void exec1();
-void exec2();
 
 //int pipe_fd[2];
 
@@ -34,19 +33,23 @@ int main(void) {
     char *argv[MAXARGS];
     int argc;
     int status;
-    int i;
+    int i, j, k, m;
     pid_t pid;
+    int fd[2];
+    pipe(fd);
+
     struct sigaction sa;
 
     sa.sa_handler = handler;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags =  0;
-    //sa.sa_flags = SA_RESTART;
+    // //sa.sa_flags = SA_RESTART;
 
     sigaction(SIGINT, &sa, NULL);
 
-    printf("=====>>> TM-MiniShell <<<===== \n");
-
+    printf("\n\t\t\t<=================================================================================================>\n");
+    printf("\t\t\t\t                             Groupe 22 - Simple SHELL \n");
+    printf("\n");
     /* Boucle while infinie pour attendre l'utilisateur rentre une commande -> executer commande*/
     while(1){
         /* Nom de cet mini shell */
@@ -58,10 +61,17 @@ int main(void) {
 
         argc = parse_line(cmdline, argv);
 
+        for (int i = 1; i < argc-1; i++) {
+            if(!strcmp(argv[i], "|")){
+                printf("i = %d\n", i);
+                j = i;
+            }
+        }
+
         /* Si la commande passée est exit, alors le shell devra s'arrêter. */
         if(strcmp(argv[0], "exit") == 0){
             printf("Byebye!\n");
-            return EXIT_SUCCESS;
+            exit(1);
         }
 
         //Simple implement cd
@@ -82,38 +92,13 @@ int main(void) {
         if(argc == 0) {
             continue;
         } else {
-            int pipe_fd[2];
-            pipe(pipe_fd);
-
-            if(pipe(pipe_fd) == -1){
-                perror("Pipe erreur!\n");
-                exit(1);
-            }
-
             pid = fork();
 
-            if(pid < 0) {
+            if(pid < 0){
                 perror("Fork erreur!");
                 exit(EXIT_FAILURE);
-            }
-
-        // for (i = 0; i <= argc; i++) {
-        // if(!strcmp(argv[i], "|")){
-        //     if(!fork()){
-        //         dup2(pipe_fd[1], 1);
-        //         execlp("ls", "ls", NULL);
-        //         perror("Exec erreur.\n");
-        //         abort();
-        //     }
-        //         dup2(pipe_fd[0], 0);
-        //         close(pipe_fd[1]);
-        //     }
-        //     execlp("wc", "wc", "-w", NULL);
-        //     perror("Exec erreur.\n");
-        // }
+            }            
           
-        
-
             if(pid == 0){ //child process
                 int out;
                 
@@ -173,43 +158,70 @@ void redirection(int argc, char *argv[]){
     }
 
     args_clean[cleanid] = NULL;
+    printf("clean id = %d", cleanid);
     /* Exécution au parent*/
     execvp(args_clean[0], args_clean); 
     fprintf(stderr, "Mauvaise commande!.\n");
     exit(0);
 }
 
-// void pipe_simple(int argc, char *argv[]){
-//     int i;
+void pipe_simple(int argc, char *argv[]){
+    int fd[2];
+    pipe(fd);
+    pid_t pid1;
+    int i, j =0, k = 0;
+    bool a = false;
+    char *lCmd[argc];
+    char *rCmd[argc];
+    for(i = 0; i < argc; i++){
+        if(!strcmp(argv[i], "|")){
+            a = true;
+            ++i;
+            rCmd[j] = argv[i];
+            printf("rCmd[%d] = %s\n", j, rCmd[j]);
+            ++j;  
+            continue;
+        }
+        if (!a){
+            lCmd[i] = argv[i];        
+            printf("lCmd[%d] = %s\n", i, lCmd[i]);
+        } else {
+            rCmd[j] = argv[i];
+            printf("rCmd[%d] = %s\n", j, rCmd[j]);
+        }
+    }
     
-// }
+    
+    if(a){
+        pid1 = fork();
 
-// void exec1(){
-//     dup2(pipe_fd[1], 1);
-//     close(pipe_fd[0]);
-//     close(pipe_fd[1]);
+        if (pid1 == 0){
+            dup2(fd[1], STDOUT_FILENO);
+            close(fd[0]);
+            close(fd[1]);
+            execlp(lCmd[0], lCmd[0], lCmd, (char*) NULL);
+            fprintf(stderr, "Failed to execute '%s'\n", lCmd[0]);
+            exit(1);
+        } else {
+            pid1 = fork();
 
-//     execlp("ls", "ls", "-l", NULL);
+            if(pid1==0){
+                dup2(fd[0], STDIN_FILENO);
+                close(fd[1]);
+                close(fd[0]);
+                execlp(rCmd[0], rCmd[0], rCmd, (char*) NULL);
+                fprintf(stderr, "Failed to execute '%s'\n", rCmd[0]);
+                exit(1);
+            } else {
+                int status;
+                close(fd[0]);
+                close(fd[1]);
+                waitpid(pid1, &status, 0);
+            }
 
-//     perror("Exec ls erreur!\n");
-//     _exit(1);
-
-// }
-
-// void exec2(){
-//     dup2(pipe_fd[0], 0);
-
-//     close(pipe_fd[0]);
-//     close(pipe_fd[1]);
-
-
-//     execlp("wc", "wc", "-w", NULL);
-
-//     perror("Exec wc erreur!\n");
-//     _exit(1);
-
-// }
-
+        }
+    }
+}
 
 void handler(int num){
     printf("Ignore Ctrl-C!\n");
