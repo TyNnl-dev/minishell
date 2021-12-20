@@ -17,9 +17,14 @@
 #define MAXARGS 16
 
 /* Fonction prototype */
-int parse_line(char *s, char **argv);
+int parse_line(char *s, char *argv[]);
 void redirection(int count, char *argv[]);
 void handler(int num);
+void pipe_simple(int count, char *argv[]);
+void exec1();
+void exec2();
+
+//int pipe_fd[2];
 
 /* ----------- MAIN PROGRAM ------------ */
 
@@ -29,6 +34,7 @@ int main(void) {
     char *argv[MAXARGS];
     int argc;
     int status;
+    int i;
     pid_t pid;
     struct sigaction sa;
 
@@ -58,16 +64,59 @@ int main(void) {
             return EXIT_SUCCESS;
         }
 
-        if(argc == 0) {
+        //Simple implement cd
+        if(strcmp(argv[0], "cd") == 0){
+            //Si unique "cd" -> HOME
+            if(argv[1] == NULL){
+                chdir(getenv("HOME"));
                 continue;
+            } else {
+                //cd .. et cd dir ok
+                if(chdir(argv[1]) == -1){
+                    printf("%s: No such directory\n", argv[1]);
+                }
+                continue;
+            }
+        }
+
+        if(argc == 0) {
+            continue;
         } else {
+            int pipe_fd[2];
+            pipe(pipe_fd);
+
+            if(pipe(pipe_fd) == -1){
+                perror("Pipe erreur!\n");
+                exit(1);
+            }
+
             pid = fork();
+
             if(pid < 0) {
                 perror("Fork erreur!");
                 exit(EXIT_FAILURE);
-            } else if(pid == 0){ //child process
-                int out;
+            }
 
+        // for (i = 0; i <= argc; i++) {
+        // if(!strcmp(argv[i], "|")){
+        //     if(!fork()){
+        //         dup2(pipe_fd[1], 1);
+        //         execlp("ls", "ls", NULL);
+        //         perror("Exec erreur.\n");
+        //         abort();
+        //     }
+        //         dup2(pipe_fd[0], 0);
+        //         close(pipe_fd[1]);
+        //     }
+        //     execlp("wc", "wc", "-w", NULL);
+        //     perror("Exec erreur.\n");
+        // }
+          
+        
+
+            if(pid == 0){ //child process
+                int out;
+                
                 redirection(argc, argv);
                 out = execvp(argv[0],argv);
 
@@ -82,16 +131,15 @@ int main(void) {
                     wait(&pid);
                 }
             }
-        }
 
-        for (int i = 0; i <= argc; i++){
-            printf("Argv[%d] = %s\n", i, argv[i]);
-        }     
-    }
-    
+            for (int i = 0; i <= argc; i++){
+                printf("Argv[%d] = %s\n", i, argv[i]);
+            }     
+        }
+    }     
 }
             
-int parse_line(char *s, char **argv){
+int parse_line(char *s, char *argv[]){
         int count = 0;
         char *spaceEnterTab = " \n\t";
 
@@ -100,7 +148,7 @@ int parse_line(char *s, char **argv){
         while ((argv[count] != NULL) && (count+1 < MAXARGS)){
             argv[++count] = strtok((char *) 0, spaceEnterTab);
         }
-        //printf("Count =%d\n", count);
+        printf("Count =%d\n", count);
         return count;
     }
 
@@ -127,10 +175,43 @@ void redirection(int argc, char *argv[]){
     args_clean[cleanid] = NULL;
     /* Exécution au parent*/
     execvp(args_clean[0], args_clean); 
-    fprintf(stderr, "Child erreur exécution.\n");
+    fprintf(stderr, "Mauvaise commande!.\n");
     exit(0);
 }
+
+// void pipe_simple(int argc, char *argv[]){
+//     int i;
+    
+// }
+
+// void exec1(){
+//     dup2(pipe_fd[1], 1);
+//     close(pipe_fd[0]);
+//     close(pipe_fd[1]);
+
+//     execlp("ls", "ls", "-l", NULL);
+
+//     perror("Exec ls erreur!\n");
+//     _exit(1);
+
+// }
+
+// void exec2(){
+//     dup2(pipe_fd[0], 0);
+
+//     close(pipe_fd[0]);
+//     close(pipe_fd[1]);
+
+
+//     execlp("wc", "wc", "-w", NULL);
+
+//     perror("Exec wc erreur!\n");
+//     _exit(1);
+
+// }
+
 
 void handler(int num){
     printf("Ignore Ctrl-C!\n");
 }
+
