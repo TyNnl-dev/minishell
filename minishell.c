@@ -23,8 +23,6 @@ void redirection(int argc, char *argv[]);
 void handler(int num);
 void pipe_simple(int argc, char *argv[]);
 
-//int pipe_fd[2];
-
 /* ----------- MAIN PROGRAM ------------ */
 
 int main(void) {
@@ -102,6 +100,8 @@ int main(void) {
             if(pid == 0){ //child process
                 int out;
                 
+                pipe_simple(argc, argv);
+
                 redirection(argc, argv);
                 out = execvp(argv[0],argv);
 
@@ -116,9 +116,11 @@ int main(void) {
                     wait(&pid);
                 }
             }
-
+            
+            printf("\n");
+            printf("Tableau *argv: \n");
             for (int i = 0; i <= argc; i++){
-                printf("Argv[%d] = %s\n", i, argv[i]);
+                printf("argv[%d] = %s\n", i, argv[i]);
             }     
         }
     }     
@@ -175,31 +177,36 @@ void pipe_simple(int argc, char *argv[]){
     char *rCmd[argc];
     for(i = 0; i < argc; i++){
         if(!strcmp(argv[i], "|")){
+            k=i;
             a = true;
             ++i;
             rCmd[j] = argv[i];
-            printf("rCmd[%d] = %s\n", j, rCmd[j]);
+            //printf("rCmd[%d] = %s\n", j, rCmd[j]);
             ++j;  
             continue;
         }
         if (!a){
             lCmd[i] = argv[i];        
-            printf("lCmd[%d] = %s\n", i, lCmd[i]);
+            //printf("lCmd[%d] = %s\n", i, lCmd[i]);
         } else {
             rCmd[j] = argv[i];
-            printf("rCmd[%d] = %s\n", j, rCmd[j]);
+            //printf("rCmd[%d] = %s\n", j, rCmd[j]);
         }
     }
     
     
-    if(a){
+    if(a == true){
         pid1 = fork();
 
         if (pid1 == 0){
             dup2(fd[1], STDOUT_FILENO);
             close(fd[0]);
             close(fd[1]);
-            execlp(lCmd[0], lCmd[0], lCmd, (char*) NULL);
+            if(k==1){
+                execlp(lCmd[0], lCmd[0], (char*) NULL);
+            } else {
+                execlp(lCmd[0], lCmd[0], lCmd[1], (char*) NULL);
+            }
             fprintf(stderr, "Failed to execute '%s'\n", lCmd[0]);
             exit(1);
         } else {
@@ -209,7 +216,7 @@ void pipe_simple(int argc, char *argv[]){
                 dup2(fd[0], STDIN_FILENO);
                 close(fd[1]);
                 close(fd[0]);
-                execlp(rCmd[0], rCmd[0], rCmd, (char*) NULL);
+                execlp(rCmd[0], rCmd[0], rCmd[1], (char*) NULL);
                 fprintf(stderr, "Failed to execute '%s'\n", rCmd[0]);
                 exit(1);
             } else {
