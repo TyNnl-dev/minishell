@@ -1,11 +1,10 @@
-systemes-groupe22
+systems-group22
 
-SHELL??
+a **MINISHELL** project
 
-1. Démarrer le shell
-2. Attendre l'entrée de l'utilisateur
-3. Analyser l'entrée utilisateur
-4. Exécutez la commande et retournez le résultat
-5. Retournez à 2.
-
+1. Start the shell
+2. Wait for user input
+3. Analyze user input
+4. Run the command and return the result
+5. Return to 2.
  
